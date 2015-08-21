@@ -1,5 +1,6 @@
 'use strict'
 
+fs          = require 'fs'
 gulp        = require 'gulp'
 loadPlugins = require 'gulp-load-plugins'
 
@@ -13,7 +14,12 @@ config =
 	paths:
 		jade:
 			base: 'app'
-			watch: ['app/*.jade', '!app/_*.jade']
+			watch: ['app/jade/**/*.jade', 'app/*.yml']
+			src: 'app/*.jade'
+			dest: '.tmp'
+		jadeStatic:
+			base: 'app'
+			watch: 'app/*.jade'
 			src: 'app/*.jade'
 			dest: '.tmp'
 		sass:
@@ -42,13 +48,31 @@ config =
 	server:
 		base: ['app', '.tmp']
 
+jadeData = (file) ->
+	data = $.yamljs.parse fs.readFileSync './app/data.yml', 'utf-8'
+
+	data: data
+
 gulp.task 'jade', ->
 	gulp.src config.paths.jade.src
 	.pipe $.plumber()
+	.pipe $.data jadeData
 	.pipe $.jade()
 	.on 'error', _logError
 	.pipe $.flatten()
 	.pipe gulp.dest config.paths.jade.dest
+	.pipe browserSync.reload stream: true
+
+gulp.task 'jadeStatic', ->
+	gulp.src config.paths.jadeStatic.src
+	.pipe $.plumber()
+	.pipe $.changed config.paths.jadeStatic.dest,
+		extension: '.html'
+	.pipe $.data jadeData
+	.pipe $.jade()
+	.on 'error', _logError
+	.pipe $.flatten()
+	.pipe gulp.dest config.paths.jadeStatic.dest
 	.pipe browserSync.reload stream: true
 
 gulp.task 'sass', ->
@@ -110,13 +134,13 @@ gulp.task 'cleanDist', (cb) ->
 	], cb
 
 gulp.task 'default', ['cleanTmp'], ->
-	$.runSequence 'sprites', ['jade', 'sass', 'coffee']
+	$.runSequence 'sprites', ['jade', 'jadeStatic', 'sass', 'coffee']
 
 gulp.task 'serve', ->
 	$.runSequence 'cleanTmp', 'sprites', ['jade', 'sass'], ->
 		bundleScripts watch: true
 
-		gulp.watch config.paths[task].watch, [task] for task in ['jade', 'sass', 'sprites']
+		gulp.watch config.paths[task].watch, [task] for task in ['jade', 'jadeStatic', 'sass', 'sprites']
 
 		browserSync.init
 			server:
