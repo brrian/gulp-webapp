@@ -48,11 +48,6 @@ config =
 	server:
 		base: ['app', '.tmp']
 
-jadeData = (file) ->
-	data = $.yamljs.parse fs.readFileSync './app/data.yml', 'utf-8'
-
-	data: data
-
 gulp.task 'jade', ->
 	gulp.src config.paths.jade.src
 	.pipe $.plumber()
@@ -181,6 +176,11 @@ bundleScripts = (options) ->
 			bundler.on 'update', rebundle
 
 			rebundle()
+
+jadeData = (file) ->
+	data = $.yamljs.parse fs.readFileSync './app/data.yml', 'utf-8'
+
+	data: data
 
 _logError = (error) ->
 	$.util.log error.message
